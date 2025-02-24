@@ -2,8 +2,12 @@ cmake_minimum_required(VERSION 3.10)
 project(LagrangeCodec)
 
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+
+if (LINUX)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wl,-Bsymbolic")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wl,-Bsymbolic")
+endif()
+
 set(CMAKE_C_COMPILE gcc)
 set(CMAKE_CXX_COMPILER g++)
 
