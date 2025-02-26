@@ -7,7 +7,7 @@
 #ifndef AUDIO_CPP_H
 #define AUDIO_CPP_H
 
-#include "include/common.h"
+#include "common.h"
 
 constexpr int SILKV3_SAMPLE_RATE = 24000;
 

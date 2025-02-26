@@ -2,11 +2,13 @@
 // Created by Wenxuan Lin on 2025-02-23.
 //
 
-#include "include/silk.h"
+#include "silk.h"
 
-#include <SKP_Silk_control.h>
-#include <SKP_Silk_SDK_API.h>
 #include <SKP_Silk_SigProc_FIX.h>
+
+#include "SKP_Silk_control.h"
+#include "SKP_Silk_SDK_API.h"
+#include "SKP_Silk_typedef.h"
 
 constexpr SKP_int32 sample_rate = 24000;
 
@@ -26,7 +28,7 @@ int silk_decode(uint8_t* silk_data, int data_len, cb_codec callback, void* userd
         return 1;
     }
 
-    psRead += 0x0A;
+    psRead += 0xD;
 
     /* Create decoder */
     SKP_int32 result = SKP_Silk_SDK_Get_Decoder_Size(&decSizeBytes);
@@ -65,7 +67,7 @@ int silk_decode(uint8_t* silk_data, int data_len, cb_codec callback, void* userd
     while (true) {
         SKP_int16 out[(FRAME_LENGTH_MS * MAX_API_FS_KHZ << 1) * MAX_INPUT_FRAMES];
         if (remainPackets == 0) {
-            nBytes = *reinterpret_cast<short*>(psRead); // Read payload size
+            nBytes = *reinterpret_cast<short *>(psRead); // Read payload size
             psRead += sizeof(SKP_int16);
 
 #ifdef _SYSTEM_IS_BIG_ENDIAN
@@ -184,7 +186,7 @@ int silk_encode(uint8_t* pcm_data, int data_len, cb_codec callback, void* userda
         return 1;
     }
 
-    callback(userdata, static_cast<uint8_t*>((void*)"\x02#!SILK_V3"), sizeof(char) * 10);
+    callback(userdata, static_cast<uint8_t *>((void*)"\x02#!SILK_V3"), sizeof(char) * 13);
 
     result = SKP_Silk_SDK_Get_Encoder_Size(&enc_size_bytes);
     if (result) {
@@ -234,7 +236,7 @@ int silk_encode(uint8_t* pcm_data, int data_len, cb_codec callback, void* userda
             swap_endian(&n_bytes_le, 1);
             callback(userdata, (void*)&n_bytes_le, sizeof(SKP_int16));
 #else
-            callback(userdata, static_cast<uint8_t*>(static_cast<void*>(&n_bytes)), sizeof(SKP_int16));
+            callback(userdata, static_cast<uint8_t *>((void*)&n_bytes), sizeof(SKP_int16));
 #endif
             // Write payload
             callback(userdata, payload, sizeof(SKP_uint8) * n_bytes);
