@@ -1,0 +1,32 @@
+{
+    "name": "lagrange-codec",
+    "version": "0.0.1",
+    "homepage": "https://github.com/LagrangeDev/LagrangeCodec",
+    "dependencies": [
+        {
+            "name": "ffmpeg",
+            "version>=": "5.0.0",
+            "features": [
+                "gpl",
+                "version3",
+                "avcodec",
+                "avformat",
+                "swresample",
+                "swscale",
+                "zlib"
+            ]
+        },
+        {
+            "name": "zlib"
+        },
+        {
+            "name": "gtest"
+        }
+    ],
+    "overrides": [
+        {
+            "name": "ffmpeg",
+            "version": "5.0.0"
+        }
+    ]
+}

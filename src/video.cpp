@@ -9,18 +9,18 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
-#include "include/video.h"
+#include "video.h"
 
 int save_frame_as_png(AVFrame* frame, int width, int height, uint8_t*& out, int& out_len) {
-    AVCodec* png_codec = avcodec_find_encoder(AV_CODEC_ID_JPEG2000);
+    auto png_codec = avcodec_find_encoder(AV_CODEC_ID_PNG);
     if (!png_codec) {
-        fprintf(stderr, "ERROR: AV_CODEC_ID_JPEG2000 codec not found\n");
+        fprintf(stderr, "ERROR: AV_CODEC_ID_PNG codec not found\n");
         return -1;
     }
 
     AVCodecContext* codec_context = avcodec_alloc_context3(png_codec);
     if (!codec_context) {
-        fprintf(stderr, "ERROR: Failed to allocate codec context for AV_CODEC_ID_JPEG2000\n");
+        fprintf(stderr, "ERROR: Failed to allocate codec context for AV_CODEC_ID_PNG\n");
         return -1;
     }
 
@@ -28,7 +28,7 @@ int save_frame_as_png(AVFrame* frame, int width, int height, uint8_t*& out, int&
     codec_context->width = width;
     codec_context->height = height;
     codec_context->pix_fmt = AV_PIX_FMT_RGB24;  // RGB format
-    codec_context->time_base = (AVRational){1, 25};  // Assume 25 fps for example
+    codec_context->time_base = AVRational{1, 25}; // Assume 25 fps for example
 
     if (avcodec_open2(codec_context, png_codec, nullptr) < 0) {
         fprintf(stderr, "ERROR: Failed to open codec\n");
@@ -83,7 +83,7 @@ int video_first_frame(uint8_t* video_data, int data_len, uint8_t*& out, int& out
         return -1;
     }
 
-    AVCodec* codec = nullptr;
+    const AVCodec *codec = nullptr;
     int video_stream_index = -1;
     for (unsigned int i = 0; i < format_context->nb_streams; i++) {
         if (format_context->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {

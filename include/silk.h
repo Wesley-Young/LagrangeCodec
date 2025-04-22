@@ -5,7 +5,7 @@
 #ifndef SILK_H
 #define SILK_H
 
-#include "include/common.h"
+#include "common.h"
 
 #include <SKP_Silk_typedef.h>
 

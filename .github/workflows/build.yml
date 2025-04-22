@@ -1,0 +1,184 @@
+name: Build LagrangeCodec
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - '*'
+
+jobs:
+  build-windows-x64:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Toolchains
+        uses: MinoruSekine/setup-scoop@v4.0.1
+        with:
+          apps: ninja
+
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Build LagrangeCodec
+        run: |
+          $env:VCPKG_ROOT = "C:\vcpkg"
+          $env:PATH = "$env:VCPKG_ROOT;$env:PATH"
+          cmake -DCMAKE_BUILD_TYPE=Release --preset msvc-x64-windows-static-release -S . -B build
+          cd build && ninja && ls
+
+      - name: Run Tests
+        run: |
+          cd build && ctest -C Release -V --no-compress-output
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LagrangeCodec.x64.dll
+          path: build/LagrangeCodec.dll
+
+  build-windows-x86:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Toolchains
+        uses: MinoruSekine/setup-scoop@v4.0.1
+        with:
+          apps: ninja
+
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x86
+
+      - name: Build LagrangeCodec
+        run: |
+          $env:VCPKG_ROOT = "C:\vcpkg"
+          $env:PATH = "$env:VCPKG_ROOT;$env:PATH"
+          cmake -DCMAKE_BUILD_TYPE=Release --preset msvc-x86-windows-static-release -S . -B build
+          cmake --build build
+
+      - name: Run Tests
+        run: |
+          cd build && ctest -C Release -V --no-compress-output
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LagrangeCodec.x86.dll
+          path: build/LagrangeCodec.dll
+
+
+  build-linux-amd64:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Toolchains
+        run: |
+          sudo apt-get update && sudo apt install build-essential cmake ninja-build nasm -y
+
+      - name: Build LagrangeCodec
+        run: |
+          export VCPKG_ROOT="/usr/local/share/vcpkg"
+          export PATH="$VCPKG_ROOT:$PATH"
+          cmake -DCMAKE_BUILD_TYPE=Release --preset gcc-x64-linux-static-release -S . -B build
+          cmake --build build
+
+      - name: Run Tests
+        run: |
+          cd build && ctest -C Release -V --no-compress-output
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libLagrangeCodec.x64.so
+          path: build/libLagrangeCodec.so
+
+  build-linux-aarch64:
+    runs-on: ubuntu-22.04-arm
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Toolchains
+        run: |
+          sudo apt-get update && sudo apt install build-essential cmake ninja-build nasm -y
+
+      - name: Build LagrangeCodec
+        run: |
+          export VCPKG_ROOT="/usr/local/share/vcpkg"
+          export PATH="$VCPKG_ROOT:$PATH"
+          cmake -DCMAKE_BUILD_TYPE=Release --preset gcc-arm64-linux-static-release -S . -B build
+          cmake --build build
+
+      - name: Run Tests
+        run: |
+          cd build && ctest -C Release -V --no-compress-output
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libLagrangeCodec.arm64.so
+          path: build/libLagrangeCodec.so
+
+  build-macos-amd64:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Toolchains
+        run: |
+          softwareupdate --install-rosetta --agree-to-license
+          arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+          arch -x86_64 /usr/local/bin/brew install cmake make nasm ninja
+          arch -x86_64 /usr/local/bin/brew link --overwrite make
+          git clone https://github.com/microsoft/vcpkg.git
+          cd vcpkg && arch -x86_64 /bin/bash ./bootstrap-vcpkg.sh
+
+      - name: Build LagrangeCodec
+        run: |
+          export VCPKG_ROOT=$GITHUB_WORKSPACE/vcpkg
+          export PATH=$VCPKG_ROOT:$PATH
+          arch -x86_64 /usr/local/bin/cmake --preset clang-x64-osx-static-release -S . -B build
+          cd build && arch -x86_64 /usr/local/bin/ninja
+
+      - name: Run Tests
+        run: |
+          cd build && arch -x86_64 /usr/local/bin/ctest -C Release -V --no-compress-output
+
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libLagrangeCodec.x64.dylib
+          path: build/libLagrangeCodec.dylib
+
+  build-macos-aarch64:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Toolchains
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git
+          cd vcpkg && ./bootstrap-vcpkg.sh
+          brew install cmake ninja nasm
+
+      - name: Build LagrangeCodec
+        run: |
+          export VCPKG_ROOT=$GITHUB_WORKSPACE/vcpkg
+          export PATH=$VCPKG_ROOT:$PATH
+          cmake -DCMAKE_BUILD_TYPE=Release --preset clang-arm64-osx-static-release -S . -B build
+          cmake --build build
+
+      - name: Run Tests
+        run: |
+          cd build && ctest -C Release -V --no-compress-output
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libLagrangeCodec.arm64.dylib
+          path: build/libLagrangeCodec.dylib

@@ -2,7 +2,7 @@
 // Created by Wenxuan Lin on 2025-02-23.
 //
 
-#include "include/audio.h"
+#include "audio.h"
 
 extern "C" {
 #include <libavformat/avformat.h>
