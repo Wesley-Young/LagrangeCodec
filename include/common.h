@@ -12,7 +12,7 @@ extern "C" {
 #include <libavformat/avformat.h>
 }
 
-typedef void (cb_codec)(void* userdata, uint8_t* p, int len);
+typedef void (cb_codec)(void* userdata, const uint8_t* p, int len);
 
 #ifdef _WIN32
 #define __dllexport __declspec(dllexport)

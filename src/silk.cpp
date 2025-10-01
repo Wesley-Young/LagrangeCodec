@@ -2,6 +2,8 @@
 // Created by Wenxuan Lin on 2025-02-23.
 //
 
+#include <string_view>
+
 #include "silk.h"
 
 #include <SKP_Silk_SigProc_FIX.h>
@@ -10,6 +12,7 @@
 #include "SKP_Silk_SDK_API.h"
 #include "SKP_Silk_typedef.h"
 
+constexpr std::string_view silk_magic = "\x02#!SILK_V3";
 constexpr SKP_int32 sample_rate = 24000;
 
 int silk_decode(uint8_t* silk_data, int data_len, cb_codec callback, void* userdata) {
@@ -24,11 +27,11 @@ int silk_decode(uint8_t* silk_data, int data_len, cb_codec callback, void* userd
 
     SKP_SILK_SDK_DecControlStruct dec_control;
 
-    if (strcmp(reinterpret_cast<char*>(psRead), "\x02#!SILK_V3") != 0) {
+    if (memcmp(psRead, silk_magic.data(), std::size(silk_magic)) != 0) {
         return 1;
     }
 
-    psRead += 0xD;
+    psRead += std::size(silk_magic);
 
     /* Create decoder */
     SKP_int32 result = SKP_Silk_SDK_Get_Decoder_Size(&decSizeBytes);
@@ -186,7 +189,7 @@ int silk_encode(uint8_t* pcm_data, int data_len, cb_codec callback, void* userda
         return 1;
     }
 
-    callback(userdata, static_cast<uint8_t *>((void*)"\x02#!SILK_V3"), sizeof(char) * 13);
+    callback(userdata, reinterpret_cast<const std::uint8_t*>(silk_magic.data()), silk_magic.size());
 
     result = SKP_Silk_SDK_Get_Encoder_Size(&enc_size_bytes);
     if (result) {
