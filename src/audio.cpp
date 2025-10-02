@@ -30,7 +30,7 @@ int audio_to_pcm(uint8_t* audio_data, int data_len, cb_codec callback, void* use
     }
 
     printf("DEBUG: number of streams found: %d\n", format_context->nb_streams);
-    int stream_index = av_find_best_stream(format_context, AVMEDIA_TYPE_AUDIO,-1, -1, nullptr, 0);
+    const int stream_index = av_find_best_stream(format_context, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
     if (stream_index < 0) {
         fprintf(stderr, "ERROR: no audio stream found\n");
         return -1;
@@ -53,7 +53,9 @@ int audio_to_pcm(uint8_t* audio_data, int data_len, cb_codec callback, void* use
         fprintf(stderr, "ERROR: failed to open the decoder\n");
         return -1;
     }
-
+    if (decoder_ctx->channel_layout == 0) {
+        decoder_ctx->channel_layout = av_get_default_channel_layout(decoder_ctx->channels);
+    }
     printf(
         "DEBUG: Setting up decoder - sample format: %s, sample rate: %d Hz, "
         "channels: %d \n",
@@ -64,31 +66,38 @@ int audio_to_pcm(uint8_t* audio_data, int data_len, cb_codec callback, void* use
     AVPacket *packet = av_packet_alloc();
     AVFrame *frame = av_frame_alloc();
 
-    SwrContext *swr_context = swr_alloc_set_opts(nullptr,
-    AV_CH_LAYOUT_MONO, AV_SAMPLE_FMT_S16,24000,
-    stream->codecpar->channel_layout,static_cast<AVSampleFormat>(stream->codecpar->format), stream->codecpar->sample_rate,
-    0, nullptr);
+    SwrContext *swr_context = swr_alloc_set_opts(
+        nullptr,
+        AV_CH_LAYOUT_MONO,
+        AV_SAMPLE_FMT_S16,
+        24000,
+        av_get_default_channel_layout(decoder_ctx->channels),
+        decoder_ctx->sample_fmt,
+        decoder_ctx->sample_rate,
+        0,
+        nullptr
+    );
+
+    ret = swr_init(swr_context);
 
     while (av_read_frame(format_context, packet) == 0) {
-        if (packet->stream_index != stream_index) continue;
-
+        if (packet->stream_index != stream_index) {
+            av_packet_unref(packet);
+            continue;
+        }
         ret = avcodec_send_packet(decoder_ctx, packet);
-        if (ret < 0 && (ret != AVERROR(EAGAIN))) {
-            fprintf(stderr, "ERROR: failed to decode a frame\n");
-        }
         while ((ret = avcodec_receive_frame(decoder_ctx, frame)) == 0) {
-            AVFrame *resampled_frame = av_frame_alloc();
-            resampled_frame->sample_rate = 24000;
-            resampled_frame->channel_layout = AV_CH_LAYOUT_MONO;
-            resampled_frame->channels = 1;
-            resampled_frame->format = AV_SAMPLE_FMT_S16;
-
-            ret = swr_convert_frame(swr_context, resampled_frame, frame);
-
-            callback(userdata, resampled_frame->data[0], resampled_frame->nb_samples * resampled_frame->channels * 2);
+            AVFrame *out = av_frame_alloc();
+            out->sample_rate = 24000;
+            out->channel_layout = AV_CH_LAYOUT_MONO;
+            out->channels = 1;
+            out->format = AV_SAMPLE_FMT_S16;
+            ret = swr_convert_frame(swr_context, out, frame);
+            callback(userdata, out->data[0], out->nb_samples * out->channels * 2);
             av_frame_unref(frame);
-            av_frame_free(&resampled_frame);
+            av_frame_free(&out);
         }
+        av_packet_unref(packet);
     }
 
     swr_free(&swr_context);
