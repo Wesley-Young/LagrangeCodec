@@ -3,6 +3,8 @@ project(LagrangeCodec)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+option(BUILD_STATIC_LIBS "Build static library instead of shared" OFF)
 if (LINUX)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wl,-Bsymbolic")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wl,-Bsymbolic")
@@ -29,7 +31,11 @@ find_package(FFMPEG REQUIRED)
 find_package(ZLIB REQUIRED)
 
 file(GLOB SOURCES "src/*.cpp")
-add_library(LagrangeCodec SHARED ${SOURCES})
+if(BUILD_STATIC_LIBS)
+    add_library(LagrangeCodec STATIC ${SOURCES})
+else()
+    add_library(LagrangeCodec SHARED ${SOURCES})
+endif()
 
 target_include_directories(LagrangeCodec PRIVATE ${CMAKE_SOURCE_DIR}/include)
 

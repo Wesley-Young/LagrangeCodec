@@ -68,6 +68,7 @@
                 "CMAKE_C_COMPILER": "gcc",
                 "CMAKE_CXX_COMPILER": "g++",
                 "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_STATIC_LIBS": "OFF",
                 "VCPKG_TARGET_TRIPLET": "x64-linux"
             }
         },
@@ -92,6 +93,7 @@
                 "CMAKE_C_COMPILER": "gcc",
                 "CMAKE_CXX_COMPILER": "g++",
                 "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_STATIC_LIBS": "OFF",
                 "VCPKG_TARGET_TRIPLET": "arm64-linux"
             }
         },
@@ -116,6 +118,7 @@
                 "CMAKE_C_COMPILER": "clang",
                 "CMAKE_CXX_COMPILER": "clang++",
                 "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_STATIC_LIBS": "OFF",
                 "VCPKG_TARGET_TRIPLET": "x64-osx"
             }
         },
@@ -140,7 +143,34 @@
                 "CMAKE_C_COMPILER": "clang",
                 "CMAKE_CXX_COMPILER": "clang++",
                 "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_STATIC_LIBS": "OFF",
                 "VCPKG_TARGET_TRIPLET": "arm64-osx"
+            }
+        },
+        {
+            "name": "mingw-x64-windows-static-release",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build-mingw-x64-release",
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+                "CMAKE_C_COMPILER": "gcc",
+                "CMAKE_CXX_COMPILER": "g++",
+                "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_STATIC_LIBS": "ON",
+                "VCPKG_TARGET_TRIPLET": "x64-mingw-static"
+            }
+        },
+        {
+            "name": "mingw-x86-windows-static-release",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build-mingw-x86-release",
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+                "CMAKE_C_COMPILER": "gcc",
+                "CMAKE_CXX_COMPILER": "g++",
+                "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_STATIC_LIBS": "ON",
+                "VCPKG_TARGET_TRIPLET": "x86-mingw-static"
             }
         }
     ]
