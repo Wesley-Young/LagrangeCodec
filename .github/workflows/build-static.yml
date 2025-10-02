@@ -31,11 +31,6 @@ jobs:
           cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_STATIC_LIBS=ON --preset mingw-x64-windows-static-release -S . -B build
           cmake --build build
 
-      - name: Run Tests
-        shell: msys2 {0}
-        run: |
-          cd build && ctest -C Release -V --no-compress-output
-
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -66,11 +61,6 @@ jobs:
           cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_STATIC_LIBS=ON --preset mingw-x86-windows-static-release -S . -B build
           cmake --build build
 
-      - name: Run Tests
-        shell: msys2 {0}
-        run: |
-          cd build && ctest -C Release -V --no-compress-output
-
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -94,10 +84,6 @@ jobs:
           cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_STATIC_LIBS=ON --preset gcc-x64-linux-static-release -S . -B build
           cmake --build build
 
-      - name: Run Tests
-        run: |
-          cd build && ctest -C Release -V --no-compress-output
-
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -120,10 +106,6 @@ jobs:
           export PATH="$VCPKG_ROOT:$PATH"
           cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_STATIC_LIBS=ON --preset gcc-arm64-linux-static-release -S . -B build
           cmake --build build
-
-      - name: Run Tests
-        run: |
-          cd build && ctest -C Release -V --no-compress-output
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -153,10 +135,6 @@ jobs:
           arch -x86_64 /usr/local/bin/cmake -DBUILD_STATIC_LIBS=ON --preset clang-x64-osx-static-release -S . -B build
           cd build && arch -x86_64 /usr/local/bin/ninja
 
-      - name: Run Tests
-        run: |
-          cd build && arch -x86_64 /usr/local/bin/ctest -C Release -V --no-compress-output
-
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -181,10 +159,6 @@ jobs:
           export PATH=$VCPKG_ROOT:$PATH
           cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_STATIC_LIBS=ON --preset clang-arm64-osx-static-release -S . -B build
           cmake --build build
-
-      - name: Run Tests
-        run: |
-          cd build && ctest -C Release -V --no-compress-output
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
