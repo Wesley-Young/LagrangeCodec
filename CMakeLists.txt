@@ -32,11 +32,14 @@ find_package(FFMPEG REQUIRED)
 
 find_package(ZLIB REQUIRED)
 
-file(GLOB SOURCES CONFIGURE_DEPENDS "src/*.cpp" "src/shim/*.c")
+file(GLOB SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 if (LAGRANGECODEC_BUILD_SHARED)
     add_library(LagrangeCodec SHARED ${SOURCES})
 else()
     add_library(LagrangeCodec STATIC ${SOURCES})
+    # Shims are only needed for static-link consumers (e.g. Kotlin/Native).
+    file(GLOB SHIM_SOURCES CONFIGURE_DEPENDS "src/shim/*.c")
+    target_sources(LagrangeCodec PRIVATE ${SHIM_SOURCES})
 endif()
 
 if (WIN32 AND LAGRANGECODEC_BUILD_SHARED)
