@@ -32,7 +32,7 @@ find_package(FFMPEG REQUIRED)
 
 find_package(ZLIB REQUIRED)
 
-file(GLOB SOURCES CONFIGURE_DEPENDS "src/*.cpp")
+file(GLOB SOURCES CONFIGURE_DEPENDS "src/*.cpp" "src/*.c")
 if (LAGRANGECODEC_BUILD_SHARED)
     add_library(LagrangeCodec SHARED ${SOURCES})
 else()
