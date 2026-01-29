@@ -2,9 +2,9 @@ name: Build LagrangeCodec
 
 on:
   workflow_dispatch:
-  #push:
-  #  branches:
-  #    - '*'
+  push:
+    branches:
+      - '*'
 
 jobs:
   build-windows-x64:
