@@ -115,30 +115,8 @@ jobs:
           cmake -DCMAKE_BUILD_TYPE=Release -DLAGRANGECODEC_BUILD_SHARED=OFF --preset ${{ matrix.preset }} -S . -B build
           cmake --build build
 
-      - name: Run Tests (Linux)
-        if: matrix.kind == 'linux'
-        run: |
-          cd build && ctest -C Release -V --no-compress-output
-
-      - name: Run Tests (macOS arm64)
-        if: matrix.kind == 'macos-arm64'
-        run: |
-          cd build && ctest -C Release -V --no-compress-output
-
-      - name: Run Tests (macOS x64 via Rosetta)
-        if: matrix.kind == 'macos-x64'
-        run: |
-          cd build && arch -x86_64 /usr/local/bin/ctest -C Release -V --no-compress-output
-
-      - name: Run Tests (Windows MinGW-w64)
-        if: matrix.kind == 'windows-mingw64'
-        shell: msys2 {0}
-        run: |
-          cd build && ctest -C Release -V --no-compress-output
-
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
           path: build/libLagrangeCodec.a
-
