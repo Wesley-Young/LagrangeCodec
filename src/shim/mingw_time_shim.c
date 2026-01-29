@@ -13,6 +13,9 @@
 #include <stdint.h>
 #include <time.h>
 
+/* MinGW-w64 declares clock_gettime64/nanosleep64 against _timespec64. */
+#include <pthread_time.h>
+
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
@@ -34,7 +37,8 @@ static void qpc_now(uint64_t* out_ns) {
     *out_ns = (uint64_t)((counter.QuadPart * 1000000000ULL) / (uint64_t)freq.QuadPart);
 }
 
-int clock_gettime64(int clock_id, struct timespec* tp) {
+__attribute__((weak))
+int __cdecl clock_gettime64(clockid_t clock_id, struct _timespec64* tp) {
     if (!tp) {
         errno = EINVAL;
         return -1;
@@ -43,7 +47,7 @@ int clock_gettime64(int clock_id, struct timespec* tp) {
     if (clock_id == CLOCK_MONOTONIC) {
         uint64_t ns = 0;
         qpc_now(&ns);
-        tp->tv_sec = (time_t)(ns / 1000000000ULL);
+        tp->tv_sec = (__time64_t)(ns / 1000000000ULL);
         tp->tv_nsec = (long)(ns % 1000000000ULL);
         return 0;
     }
@@ -58,12 +62,13 @@ int clock_gettime64(int clock_id, struct timespec* tp) {
     /* Windows FILETIME is 100ns since 1601-01-01. Convert to Unix epoch. */
     const uint64_t EPOCH_DIFF_100NS = 116444736000000000ULL;
     uint64_t t100 = (ui.QuadPart > EPOCH_DIFF_100NS) ? (ui.QuadPart - EPOCH_DIFF_100NS) : 0;
-    tp->tv_sec = (time_t)(t100 / 10000000ULL);
+    tp->tv_sec = (__time64_t)(t100 / 10000000ULL);
     tp->tv_nsec = (long)((t100 % 10000000ULL) * 100ULL);
     return 0;
 }
 
-int nanosleep64(const struct timespec* req, struct timespec* rem) {
+__attribute__((weak))
+int __cdecl nanosleep64(const struct _timespec64* req, struct _timespec64* rem) {
     (void)rem;
     if (!req) {
         errno = EINVAL;
@@ -89,4 +94,3 @@ int nanosleep64(const struct timespec* req, struct timespec* rem) {
 }
 
 #endif /* __MINGW32__ || __MINGW64__ */
-
