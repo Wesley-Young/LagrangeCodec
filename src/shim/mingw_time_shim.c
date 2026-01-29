@@ -37,7 +37,6 @@ static void qpc_now(uint64_t* out_ns) {
     *out_ns = (uint64_t)((counter.QuadPart * 1000000000ULL) / (uint64_t)freq.QuadPart);
 }
 
-__attribute__((weak))
 int __cdecl clock_gettime64(clockid_t clock_id, struct _timespec64* tp) {
     if (!tp) {
         errno = EINVAL;
@@ -67,7 +66,6 @@ int __cdecl clock_gettime64(clockid_t clock_id, struct _timespec64* tp) {
     return 0;
 }
 
-__attribute__((weak))
 int __cdecl nanosleep64(const struct _timespec64* req, struct _timespec64* rem) {
     (void)rem;
     if (!req) {
