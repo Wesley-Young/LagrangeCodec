@@ -18,31 +18,36 @@ jobs:
             runs_on: ubuntu-22.04
             kind: linux
             preset: gcc-x64-linux-static-release
-            artifact_name: libLagrangeCodec.linux.x64.a
+            triplet: x64-linux
+            artifact_name: LagrangeCodec.staticlink.linux.x64
 
           - name: linux-aarch64
             runs_on: ubuntu-22.04-arm
             kind: linux
             preset: gcc-arm64-linux-static-release
-            artifact_name: libLagrangeCodec.linux.arm64.a
+            triplet: arm64-linux
+            artifact_name: LagrangeCodec.staticlink.linux.arm64
 
           - name: macos-amd64
             runs_on: macos-latest
             kind: macos-x64
             preset: clang-x64-osx-static-release
-            artifact_name: libLagrangeCodec.macos.x64.a
+            triplet: x64-osx
+            artifact_name: LagrangeCodec.staticlink.macos.x64
 
           - name: macos-aarch64
             runs_on: macos-latest
             kind: macos-arm64
             preset: clang-arm64-osx-static-release
-            artifact_name: libLagrangeCodec.macos.arm64.a
+            triplet: arm64-osx
+            artifact_name: LagrangeCodec.staticlink.macos.arm64
 
           - name: windows-mingw-amd64
             runs_on: windows-latest
             kind: windows-mingw64
             preset: mingw-x64-windows-static-release
-            artifact_name: libLagrangeCodec.mingw.x64.a
+            triplet: x64-mingw-static
+            artifact_name: LagrangeCodec.staticlink.mingw.x64
 
     steps:
       - uses: actions/checkout@v4
@@ -88,7 +93,7 @@ jobs:
         run: |
           export VCPKG_ROOT="/usr/local/share/vcpkg"
           export PATH="$VCPKG_ROOT:$PATH"
-          cmake -DCMAKE_BUILD_TYPE=Release -DLAGRANGECODEC_BUILD_SHARED=OFF --preset ${{ matrix.preset }} -S . -B build
+          cmake -DCMAKE_BUILD_TYPE=Release -DVCPKG_BUILD_TYPE=release -DLAGRANGECODEC_BUILD_SHARED=OFF --preset ${{ matrix.preset }} -S . -B build
           cmake --build build
 
       - name: Build LagrangeCodec (static) (macOS arm64)
@@ -96,7 +101,7 @@ jobs:
         run: |
           export VCPKG_ROOT=$GITHUB_WORKSPACE/vcpkg
           export PATH=$VCPKG_ROOT:$PATH
-          cmake -DCMAKE_BUILD_TYPE=Release -DLAGRANGECODEC_BUILD_SHARED=OFF --preset ${{ matrix.preset }} -S . -B build
+          cmake -DCMAKE_BUILD_TYPE=Release -DVCPKG_BUILD_TYPE=release -DLAGRANGECODEC_BUILD_SHARED=OFF --preset ${{ matrix.preset }} -S . -B build
           cmake --build build
 
       - name: Build LagrangeCodec (static) (macOS x64 via Rosetta)
@@ -104,7 +109,7 @@ jobs:
         run: |
           export VCPKG_ROOT=$GITHUB_WORKSPACE/vcpkg
           export PATH=$VCPKG_ROOT:$PATH
-          arch -x86_64 /usr/local/bin/cmake -DCMAKE_BUILD_TYPE=Release -DLAGRANGECODEC_BUILD_SHARED=OFF --preset ${{ matrix.preset }} -S . -B build
+          arch -x86_64 /usr/local/bin/cmake -DCMAKE_BUILD_TYPE=Release -DVCPKG_BUILD_TYPE=release -DLAGRANGECODEC_BUILD_SHARED=OFF --preset ${{ matrix.preset }} -S . -B build
           cd build && arch -x86_64 /usr/local/bin/ninja
 
       - name: Build LagrangeCodec (static) (Windows MinGW-w64)
@@ -113,11 +118,92 @@ jobs:
         run: |
           export VCPKG_ROOT="C:/vcpkg"
           export PATH="$VCPKG_ROOT:$PATH"
-          cmake -DCMAKE_BUILD_TYPE=Release -DLAGRANGECODEC_BUILD_SHARED=OFF --preset ${{ matrix.preset }} -S . -B build
+          cmake -DCMAKE_BUILD_TYPE=Release -DVCPKG_BUILD_TYPE=release -DLAGRANGECODEC_BUILD_SHARED=OFF --preset ${{ matrix.preset }} -S . -B build
           cmake --build build
+
+      - name: Stage Static Link Bundle (Linux/macOS)
+        if: matrix.kind != 'windows-mingw64'
+        run: |
+          set -euo pipefail
+          OUT_DIR="bundle"
+          VCPKG_LIB_DIR="build/vcpkg_installed/${{ matrix.triplet }}/lib"
+          mkdir -p "$OUT_DIR"
+
+          # Project archive
+          cp -f "build/libLagrangeCodec.a" "$OUT_DIR/"
+
+          # Minimal dependency set for linking (FFmpeg + zlib).
+          required=(libavformat.a libavcodec.a libavutil.a libswresample.a libswscale.a)
+          missing=0
+          for name in "${required[@]}"; do
+            if [ ! -f "$VCPKG_LIB_DIR/$name" ]; then
+              echo "Missing required dependency: $VCPKG_LIB_DIR/$name"
+              missing=1
+            fi
+          done
+          if [ -f "$VCPKG_LIB_DIR/libz.a" ]; then
+            zlib_name="libz.a"
+          elif [ -f "$VCPKG_LIB_DIR/libzlib.a" ]; then
+            zlib_name="libzlib.a"
+          else
+            echo "Missing required dependency: $VCPKG_LIB_DIR/libz.a (or libzlib.a)"
+            missing=1
+          fi
+          if [ "$missing" -ne 0 ]; then
+            echo "Available files under $VCPKG_LIB_DIR:"
+            ls -la "$VCPKG_LIB_DIR" || true
+            exit 1
+          fi
+
+          for name in "${required[@]}" "$zlib_name"; do
+            cp -f "$VCPKG_LIB_DIR/$name" "$OUT_DIR/"
+          done
+
+          echo "Staged files:"
+          ls -la "$OUT_DIR"
+
+      - name: Stage Static Link Bundle (Windows MinGW-w64)
+        if: matrix.kind == 'windows-mingw64'
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          OUT_DIR="bundle"
+          VCPKG_LIB_DIR="build/vcpkg_installed/${{ matrix.triplet }}/lib"
+          mkdir -p "$OUT_DIR"
+
+          cp -f "build/libLagrangeCodec.a" "$OUT_DIR/"
+
+          required=(libavformat.a libavcodec.a libavutil.a libswresample.a libswscale.a)
+          missing=0
+          for name in "${required[@]}"; do
+            if [ ! -f "$VCPKG_LIB_DIR/$name" ]; then
+              echo "Missing required dependency: $VCPKG_LIB_DIR/$name"
+              missing=1
+            fi
+          done
+          if [ -f "$VCPKG_LIB_DIR/libz.a" ]; then
+            zlib_name="libz.a"
+          elif [ -f "$VCPKG_LIB_DIR/libzlib.a" ]; then
+            zlib_name="libzlib.a"
+          else
+            echo "Missing required dependency: $VCPKG_LIB_DIR/libz.a (or libzlib.a)"
+            missing=1
+          fi
+          if [ "$missing" -ne 0 ]; then
+            echo "Available files under $VCPKG_LIB_DIR:"
+            ls -la "$VCPKG_LIB_DIR" || true
+            exit 1
+          fi
+
+          for name in "${required[@]}" "$zlib_name"; do
+            cp -f "$VCPKG_LIB_DIR/$name" "$OUT_DIR/"
+          done
+
+          echo "Staged files:"
+          ls -la "$OUT_DIR"
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: build/libLagrangeCodec.a
+          path: bundle/
