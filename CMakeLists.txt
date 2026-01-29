@@ -3,6 +3,10 @@ project(LagrangeCodec)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+# Default builds keep producing the shared library as before. Static builds are
+# used by the dedicated CI workflow (and by consumers who want a .a archive).
+option(LAGRANGECODEC_BUILD_SHARED "Build LagrangeCodec as a shared library" ON)
 if (LINUX)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wl,-Bsymbolic")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wl,-Bsymbolic")
@@ -28,25 +32,33 @@ find_package(FFMPEG REQUIRED)
 
 find_package(ZLIB REQUIRED)
 
-file(GLOB SOURCES "src/*.cpp")
-add_library(LagrangeCodec SHARED ${SOURCES})
+file(GLOB SOURCES CONFIGURE_DEPENDS "src/*.cpp")
+if (LAGRANGECODEC_BUILD_SHARED)
+    add_library(LagrangeCodec SHARED ${SOURCES})
+else()
+    add_library(LagrangeCodec STATIC ${SOURCES})
+endif()
 
-target_include_directories(LagrangeCodec PRIVATE ${CMAKE_SOURCE_DIR}/include)
+if (WIN32 AND LAGRANGECODEC_BUILD_SHARED)
+    target_compile_definitions(LagrangeCodec PRIVATE LAGRANGECODEC_SHARED_BUILD)
+endif()
+
+target_include_directories(LagrangeCodec PUBLIC ${CMAKE_SOURCE_DIR}/include)
 
 target_include_directories(LagrangeCodec PRIVATE
         ${silk_fetch_SOURCE_DIR}/silk/interface
         ${silk_fetch_SOURCE_DIR}/silk/include
         ${silk_fetch_SOURCE_DIR}/silk/src
 )
-file(GLOB SILK_SRC_FILES
+file(GLOB SILK_SRC_FILES CONFIGURE_DEPENDS
         ${silk_fetch_SOURCE_DIR}/silk/src/*.c
         ${silk_fetch_SOURCE_DIR}/silk/src/*.S
 )
 target_sources(LagrangeCodec PRIVATE ${SILK_SRC_FILES})
 
-target_include_directories(LagrangeCodec PRIVATE ${FFMPEG_INCLUDE_DIRS})
-target_link_directories(LagrangeCodec PRIVATE ${FFMPEG_LIBRARY_DIRS})
-target_link_libraries(LagrangeCodec PRIVATE ${FFMPEG_LIBRARIES} ZLIB::ZLIB)
+target_include_directories(LagrangeCodec PUBLIC ${FFMPEG_INCLUDE_DIRS})
+target_link_directories(LagrangeCodec PUBLIC ${FFMPEG_LIBRARY_DIRS})
+target_link_libraries(LagrangeCodec PUBLIC ${FFMPEG_LIBRARIES} ZLIB::ZLIB)
 
 enable_testing()
 find_package(GTest CONFIG REQUIRED)

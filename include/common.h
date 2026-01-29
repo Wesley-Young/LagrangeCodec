@@ -15,7 +15,11 @@ extern "C" {
 typedef void (cb_codec)(void* userdata, const uint8_t* p, int len);
 
 #ifdef _WIN32
+#if defined(LAGRANGECODEC_SHARED_BUILD)
 #define __dllexport __declspec(dllexport)
+#else
+#define __dllexport
+#endif
 #else
 #define __dllexport
 #endif

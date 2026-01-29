@@ -1,0 +1,144 @@
+name: Build LagrangeCodec Static Library
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - '*'
+
+jobs:
+  build-static:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runs_on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-amd64
+            runs_on: ubuntu-22.04
+            kind: linux
+            preset: gcc-x64-linux-static-release
+            artifact_name: libLagrangeCodec.linux.x64.a
+
+          - name: linux-aarch64
+            runs_on: ubuntu-22.04-arm
+            kind: linux
+            preset: gcc-arm64-linux-static-release
+            artifact_name: libLagrangeCodec.linux.arm64.a
+
+          - name: macos-amd64
+            runs_on: macos-latest
+            kind: macos-x64
+            preset: clang-x64-osx-static-release
+            artifact_name: libLagrangeCodec.macos.x64.a
+
+          - name: macos-aarch64
+            runs_on: macos-latest
+            kind: macos-arm64
+            preset: clang-arm64-osx-static-release
+            artifact_name: libLagrangeCodec.macos.arm64.a
+
+          - name: windows-mingw-amd64
+            runs_on: windows-latest
+            kind: windows-mingw64
+            preset: mingw-x64-windows-static-release
+            artifact_name: libLagrangeCodec.mingw.x64.a
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Toolchains (Linux)
+        if: matrix.kind == 'linux'
+        run: |
+          sudo apt-get update && sudo apt install build-essential cmake ninja-build nasm -y
+
+      - name: Setup Toolchains (macOS arm64)
+        if: matrix.kind == 'macos-arm64'
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git
+          cd vcpkg && ./bootstrap-vcpkg.sh
+          brew install cmake ninja nasm
+
+      - name: Setup Toolchains (macOS x64 via Rosetta)
+        if: matrix.kind == 'macos-x64'
+        run: |
+          softwareupdate --install-rosetta --agree-to-license
+          arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+          arch -x86_64 /usr/local/bin/brew install cmake make nasm ninja
+          arch -x86_64 /usr/local/bin/brew link --overwrite make
+          git clone https://github.com/microsoft/vcpkg.git
+          cd vcpkg && arch -x86_64 /bin/bash ./bootstrap-vcpkg.sh
+
+      - name: Setup Toolchains (Windows MinGW-w64)
+        if: matrix.kind == 'windows-mingw64'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            git
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-nasm
+
+      - name: Build LagrangeCodec (static) (Linux)
+        if: matrix.kind == 'linux'
+        run: |
+          export VCPKG_ROOT="/usr/local/share/vcpkg"
+          export PATH="$VCPKG_ROOT:$PATH"
+          cmake -DCMAKE_BUILD_TYPE=Release -DLAGRANGECODEC_BUILD_SHARED=OFF --preset ${{ matrix.preset }} -S . -B build
+          cmake --build build
+
+      - name: Build LagrangeCodec (static) (macOS arm64)
+        if: matrix.kind == 'macos-arm64'
+        run: |
+          export VCPKG_ROOT=$GITHUB_WORKSPACE/vcpkg
+          export PATH=$VCPKG_ROOT:$PATH
+          cmake -DCMAKE_BUILD_TYPE=Release -DLAGRANGECODEC_BUILD_SHARED=OFF --preset ${{ matrix.preset }} -S . -B build
+          cmake --build build
+
+      - name: Build LagrangeCodec (static) (macOS x64 via Rosetta)
+        if: matrix.kind == 'macos-x64'
+        run: |
+          export VCPKG_ROOT=$GITHUB_WORKSPACE/vcpkg
+          export PATH=$VCPKG_ROOT:$PATH
+          arch -x86_64 /usr/local/bin/cmake -DCMAKE_BUILD_TYPE=Release -DLAGRANGECODEC_BUILD_SHARED=OFF --preset ${{ matrix.preset }} -S . -B build
+          cd build && arch -x86_64 /usr/local/bin/ninja
+
+      - name: Build LagrangeCodec (static) (Windows MinGW-w64)
+        if: matrix.kind == 'windows-mingw64'
+        shell: msys2 {0}
+        run: |
+          export VCPKG_ROOT="C:/vcpkg"
+          export PATH="$VCPKG_ROOT:$PATH"
+          cmake -DCMAKE_BUILD_TYPE=Release -DLAGRANGECODEC_BUILD_SHARED=OFF --preset ${{ matrix.preset }} -S . -B build
+          cmake --build build
+
+      - name: Run Tests (Linux)
+        if: matrix.kind == 'linux'
+        run: |
+          cd build && ctest -C Release -V --no-compress-output
+
+      - name: Run Tests (macOS arm64)
+        if: matrix.kind == 'macos-arm64'
+        run: |
+          cd build && ctest -C Release -V --no-compress-output
+
+      - name: Run Tests (macOS x64 via Rosetta)
+        if: matrix.kind == 'macos-x64'
+        run: |
+          cd build && arch -x86_64 /usr/local/bin/ctest -C Release -V --no-compress-output
+
+      - name: Run Tests (Windows MinGW-w64)
+        if: matrix.kind == 'windows-mingw64'
+        shell: msys2 {0}
+        run: |
+          cd build && ctest -C Release -V --no-compress-output
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: build/libLagrangeCodec.a
+
