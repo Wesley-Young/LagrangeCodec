@@ -1,14 +1,6 @@
-/*
- * Kotlin/Native's linuxArm64 link step may use a sysroot/runtime that doesn't
- * provide the AArch64 LSE/outline-atomics helper symbols that some FFmpeg builds
- * reference (e.g. __aarch64_ldadd4_* / __aarch64_swp4_*).
- *
- * Provide weak shims so static linking succeeds. These implementations use
- * GCC-style __atomic builtins and are compiled into libLagrangeCodec.a.
- *
- * Note: These symbols are part of compiler-rt on many toolchains; marking them
- * weak avoids conflicts when the "real" implementation is available.
- */
+//
+// Provides missing symbols when linking with Linux on AArch64 that lacks atomic operations.
+//
 
 #if defined(__linux__) && defined(__aarch64__)
 

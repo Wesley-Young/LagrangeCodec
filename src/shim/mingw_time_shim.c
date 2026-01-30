@@ -1,11 +1,6 @@
-/*
- * Kotlin/Native's mingwX64 toolchain uses lld and a MinGW-w64 sysroot that may
- * not provide the same time64 symbols that FFmpeg (built via vcpkg/MSYS2) ends
- * up referencing (e.g. clock_gettime64/nanosleep64).
- *
- * Provide lightweight shims so static linking succeeds. These are only enabled
- * for MinGW builds.
- */
+//
+// Provides missing symbols when linking with MinGW-w64 that lacks clock_gettime64, nanosleep64.
+//
 
 #if defined(__MINGW32__) || defined(__MINGW64__)
 

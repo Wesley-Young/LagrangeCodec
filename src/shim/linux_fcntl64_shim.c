@@ -1,11 +1,6 @@
-/*
- * Some toolchains/sysroots used during Kotlin/Native's linuxX64 link step can
- * end up without the legacy fcntl64 symbol even though dependent archives
- * (e.g. FFmpeg) reference it. Provide a weak shim so static linking succeeds.
- *
- * This is intentionally minimal: FFmpeg uses fcntl64 for F_GETFL/F_SETFL in
- * ff_socket_nonblock(), so forwarding to fcntl() is sufficient.
- */
+//
+// Provides missing symbols when linking with Linux that lacks fcntl64.
+//
 
 #if defined(__linux__)
 
