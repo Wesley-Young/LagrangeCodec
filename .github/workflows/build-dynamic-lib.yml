@@ -1,4 +1,4 @@
-name: Build LagrangeCodec
+name: Build LagrangeCodec Dynamic Library
 
 on:
   workflow_dispatch:
@@ -65,7 +65,6 @@ jobs:
         with:
           name: LagrangeCodec.x86.dll
           path: build/LagrangeCodec.dll
-
 
   build-linux-amd64:
     runs-on: ubuntu-22.04
