@@ -2,3 +2,4 @@ build-*
 !.github/workflows/*
 /.idea
 /.vscode
+/build

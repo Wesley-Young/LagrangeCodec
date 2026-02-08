@@ -11,67 +11,32 @@
 #include <iostream>
 #include <filesystem>
 
-#ifdef _WIN32
-    #include <windows.h>
-    typedef HMODULE DynLibHandle;
-    #define LoadDynLib(name) LoadLibraryA(name)
-    #define GetDynLibSymbol(handle, symbol) GetProcAddress(handle, symbol)
-    #define CloseDynLib(handle) FreeLibrary(handle)
-    #define LIBRARY_NAME "../LagrangeCodec.dll"
-#else
-    #include <dlfcn.h>
-    typedef void* DynLibHandle;
-    #define LoadDynLib(name) dlopen(name, RTLD_LAZY)
-    #define GetDynLibSymbol(handle, symbol) dlsym(handle, symbol)
-    #define CloseDynLib(handle) dlclose(handle)
-    #ifdef __APPLE__
-        #define LIBRARY_NAME "../libLagrangeCodec.dylib"
-    #else
-        #define LIBRARY_NAME "../libLagrangeCodec.so"
-    #endif
+#include "audio.h"
+#include "silk.h"
+#include "video.h"
+
+#ifndef LAGRANGECODEC_TEST_DATA_DIR
+#define LAGRANGECODEC_TEST_DATA_DIR ""
 #endif
 
-typedef void (cb_codec)(void* userdata, uint8_t* p, int len);
-
-struct VideoInfo {
-    int width;
-    int height;
-    int64_t duration;
-};
-
-typedef int (*silk_decode_func)(uint8_t* silk_data, int len, cb_codec* callback, void* userdata);
-typedef int (*silk_encode_func)(uint8_t* pcm_data, int len, cb_codec* callback, void* userdata);
-typedef int (*video_first_frame_func)(uint8_t* video_data, int data_len, uint8_t*& out, int& out_len);
-typedef int (*video_get_size_func)(uint8_t* video_data, int data_len, VideoInfo& info);
-typedef int (*audio_to_pcm_func)(uint8_t* audio_data, int data_len, cb_codec* callback, void* userdata);
-
-void testCallback(void* userdata, uint8_t* data, int len) {
+void testCallback(void* userdata, const uint8_t* data, int len) {
     if (userdata && data && len > 0) {
-        auto buffer = static_cast<std::vector<uint8_t>*>(userdata);
+        auto buffer = static_cast<std::vector<uint8_t> *>(userdata);
         buffer->insert(buffer->end(), data, data + len);
     }
 }
 
 class LagrangeCodecTest : public testing::Test {
 protected:
-    DynLibHandle library = nullptr;
-    silk_decode_func silk_decode = nullptr;
-    silk_encode_func silk_encode = nullptr;
-    video_first_frame_func video_first_frame = nullptr;
-    video_get_size_func video_get_size = nullptr;
-    audio_to_pcm_func audio_to_pcm = nullptr;
-
     std::vector<uint8_t> audioData;
     std::vector<uint8_t> videoData;
     bool hasAudioData = false;
     bool hasVideoData = false;
 
-    static std::vector<uint8_t> loadTestData(const std::string& file_name) {
+    static std::vector<uint8_t> loadTestData(const std::string&file_name) {
         using namespace std;
         try {
-            const filesystem::path exePath = filesystem::current_path();
-            std::cout << "Current working directory: " << exePath << std::endl;
-            filesystem::path dataPath = exePath.parent_path().parent_path() / "tests" / "test_data" / file_name;
+            filesystem::path dataPath = filesystem::path(LAGRANGECODEC_TEST_DATA_DIR) / file_name;
             std::cout << "Attempting to load file: " << dataPath << std::endl;
 
             std::ifstream file(dataPath, std::ios::binary);
@@ -85,7 +50,7 @@ protected:
             file.seekg(0, std::ios::beg);
 
             std::vector<uint8_t> buffer(size);
-            file.read(reinterpret_cast<char*>(buffer.data()), size);
+            file.read(reinterpret_cast<char *>(buffer.data()), size);
 
             if (file.gcount() != size) {
                 std::cerr << "Failed to read entire file: " << dataPath << std::endl;
@@ -95,37 +60,20 @@ protected:
             std::cout << "Successfully loaded " << size << " bytes from " << dataPath << std::endl;
             return buffer;
         }
-        catch (const std::exception& e) {
+        catch (const std::exception&e) {
             std::cerr << "Exception while loading test data: " << e.what() << std::endl;
             return {};
         }
     }
 
     void SetUp() override {
-        library = LoadDynLib(LIBRARY_NAME);
-        ASSERT_TRUE(library != nullptr) << "Failed to load the LagrangeCodec library";
-
-        silk_decode = reinterpret_cast<silk_decode_func>(GetDynLibSymbol(library, "silk_decode"));
-        ASSERT_TRUE(silk_decode != nullptr) << "Failed to load silk_decode function";
-
-        silk_encode = reinterpret_cast<silk_encode_func>(GetDynLibSymbol(library, "silk_encode"));
-        ASSERT_TRUE(silk_encode != nullptr) << "Failed to load silk_encode function";
-
-        video_first_frame = reinterpret_cast<video_first_frame_func>(GetDynLibSymbol(library, "video_first_frame"));
-        ASSERT_TRUE(video_first_frame != nullptr) << "Failed to load video_first_frame function";
-
-        video_get_size = reinterpret_cast<video_get_size_func>(GetDynLibSymbol(library, "video_get_size"));
-        ASSERT_TRUE(video_get_size != nullptr) << "Failed to load video_get_size function";
-
-        audio_to_pcm = reinterpret_cast<audio_to_pcm_func>(GetDynLibSymbol(library, "audio_to_pcm"));
-        ASSERT_TRUE(audio_to_pcm != nullptr) << "Failed to load audio_to_pcm function";
-
         std::cout << "Loading audio test data..." << std::endl;
         audioData = loadTestData("test_audio.mp3");
         hasAudioData = !audioData.empty();
         if (hasAudioData) {
             std::cout << "Audio data loaded successfully: " << audioData.size() << " bytes" << std::endl;
-        } else {
+        }
+        else {
             std::cout << "Failed to load audio data!" << std::endl;
         }
 
@@ -134,15 +82,9 @@ protected:
         hasVideoData = !videoData.empty();
         if (hasVideoData) {
             std::cout << "Video data loaded successfully: " << videoData.size() << " bytes" << std::endl;
-        } else {
-            std::cout << "Failed to load video data!" << std::endl;
         }
-    }
-
-    void TearDown() override {
-        if (library) {
-            CloseDynLib(library);
-            library = nullptr;
+        else {
+            std::cout << "Failed to load video data!" << std::endl;
         }
     }
 };
@@ -211,7 +153,7 @@ TEST_F(LagrangeCodecTest, TestVideoGetSize) {
     EXPECT_EQ(info.height, 240) << "Video height is not expected";
     EXPECT_EQ(info.duration, 124) << "Video duration is not expected";
     std::cout << "Video dimensions: " << info.width << "x" << info.height
-              << ", duration: " << info.duration << std::endl;
+            << ", duration: " << info.duration << std::endl;
 }
 
 
@@ -239,7 +181,7 @@ TEST_F(LagrangeAudioCodecTest, TestPcmToSilkOnly) {
     std::cout << "SILK encoded data size: " << localSilkData.size() << " bytes" << std::endl;
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
     std::cout << "Starting LagrangeCodec tests..." << std::endl;
     testing::InitGoogleTest(&argc, argv);
     const int result = RUN_ALL_TESTS();

@@ -1,30 +1,14 @@
 //
-// Created by Wenxuan Lin on 2025-02-23.
+// Created by pk5ls on 2026/2/8.
 //
 
-#ifndef COMMON_H
-#define COMMON_H
-
-#include <cstdint>
+#ifndef LAGRANGECODEC_UTIL_H
+#define LAGRANGECODEC_UTIL_H
 
 extern "C" {
 #include <libavformat/avio.h>
 #include <libavformat/avformat.h>
 }
-
-typedef void (cb_codec)(void* userdata, const uint8_t* p, int len);
-
-#ifdef _WIN32
-#if defined(LAGRANGECODEC_SHARED_BUILD)
-#define __dllexport __declspec(dllexport)
-#else
-#define __dllexport
-#endif
-#else
-#define __dllexport
-#endif
-
-#define EXPORT extern "C" __dllexport
 
 // REMEMBER TO FREE THE BUFFER AFTER USE BY av_free(format_context->pb->buffer);
 inline int create_format_context(uint8_t* data, int data_len, AVFormatContext** format_context) {
@@ -52,4 +36,4 @@ inline int create_format_context(uint8_t* data, int data_len, AVFormatContext** 
     return 0;
 }
 
-#endif //COMMON_H
+#endif //LAGRANGECODEC_UTIL_H

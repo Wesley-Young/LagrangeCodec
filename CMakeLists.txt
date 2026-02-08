@@ -46,9 +46,11 @@ if (WIN32 AND LAGRANGECODEC_BUILD_SHARED)
     target_compile_definitions(LagrangeCodec PRIVATE LAGRANGECODEC_SHARED_BUILD)
 endif()
 
-target_include_directories(LagrangeCodec PUBLIC ${CMAKE_SOURCE_DIR}/include)
-
-target_include_directories(LagrangeCodec PRIVATE
+target_include_directories(LagrangeCodec
+    PUBLIC
+        ${CMAKE_SOURCE_DIR}/include/public
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
         ${silk_fetch_SOURCE_DIR}/silk/interface
         ${silk_fetch_SOURCE_DIR}/silk/include
         ${silk_fetch_SOURCE_DIR}/silk/src

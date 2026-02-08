@@ -33,6 +33,11 @@ jobs:
           cmake -DCMAKE_BUILD_TYPE=Release -DVCPKG_BUILD_TYPE=release -DLAGRANGECODEC_BUILD_SHARED=OFF --preset mingw-x64-windows-static-release -S . -B build
           cmake --build build
 
+      - name: Run Tests
+        shell: msys2 {0}
+        run: |
+          cd build && ctest -C Release -V --no-compress-output
+
       - name: Stage Static Link Bundle
         shell: msys2 {0}
         run: |
@@ -94,6 +99,10 @@ jobs:
           cmake -DCMAKE_BUILD_TYPE=Release -DVCPKG_BUILD_TYPE=release -DLAGRANGECODEC_BUILD_SHARED=OFF --preset gcc-x64-linux-static-release -S . -B build
           cmake --build build
 
+      - name: Run Tests
+        run: |
+          cd build && ctest -C Release -V --no-compress-output
+
       - name: Stage Static Link Bundle
         run: |
           set -euo pipefail
@@ -153,6 +162,10 @@ jobs:
           export PATH="$VCPKG_ROOT:$PATH"
           cmake -DCMAKE_BUILD_TYPE=Release -DVCPKG_BUILD_TYPE=release -DLAGRANGECODEC_BUILD_SHARED=OFF --preset gcc-arm64-linux-static-release -S . -B build
           cmake --build build
+
+      - name: Run Tests
+        run: |
+          cd build && ctest -C Release -V --no-compress-output
 
       - name: Stage Static Link Bundle
         run: |
@@ -219,6 +232,10 @@ jobs:
           arch -x86_64 /usr/local/bin/cmake -DCMAKE_BUILD_TYPE=Release -DVCPKG_BUILD_TYPE=release -DLAGRANGECODEC_BUILD_SHARED=OFF --preset clang-x64-osx-static-release -S . -B build
           cd build && arch -x86_64 /usr/local/bin/ninja
 
+      - name: Run Tests
+        run: |
+          cd build && arch -x86_64 /usr/local/bin/ctest -C Release -V --no-compress-output
+
       - name: Stage Static Link Bundle
         run: |
           set -euo pipefail
@@ -280,6 +297,10 @@ jobs:
           export PATH=$VCPKG_ROOT:$PATH
           cmake -DCMAKE_BUILD_TYPE=Release -DVCPKG_BUILD_TYPE=release -DLAGRANGECODEC_BUILD_SHARED=OFF --preset clang-arm64-osx-static-release -S . -B build
           cmake --build build
+
+      - name: Run Tests
+        run: |
+          cd build && ctest -C Release -V --no-compress-output
 
       - name: Stage Static Link Bundle
         run: |

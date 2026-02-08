@@ -7,8 +7,6 @@
 
 #include "common.h"
 
-#include <SKP_Silk_typedef.h>
-
 #define MAX_INPUT_FRAMES        5
 #define MAX_FRAME_LENGTH        480
 #define FRAME_LENGTH_MS         20

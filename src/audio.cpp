@@ -3,6 +3,7 @@
 //
 
 #include "audio.h"
+#include "util.h"
 
 extern "C" {
 #include <libavformat/avformat.h>
