@@ -74,13 +74,17 @@ set(OPTIONS "${OPTIONS} --enable-fft --enable-protocol=file --enable-bsf=h264_mp
 ### PATCH END!
 
 if(VCPKG_TARGET_ARCHITECTURE STREQUAL "arm")
-  set(OPTIONS "${OPTIONS} --disable-asm --disable-x86asm")
-endif()
-if(VCPKG_TARGET_ARCHITECTURE STREQUAL "arm64")
-  set(OPTIONS "${OPTIONS} --enable-asm --disable-x86asm")
-endif()
-if(VCPKG_TARGET_ARCHITECTURE STREQUAL "x86" OR VCPKG_TARGET_ARCHITECTURE STREQUAL "x64")
-  set(OPTIONS "${OPTIONS} --enable-asm --enable-x86asm")
+    set(OPTIONS "${OPTIONS} --disable-asm --disable-x86asm")
+elseif(VCPKG_TARGET_ARCHITECTURE STREQUAL "arm64")
+    set(OPTIONS "${OPTIONS} --enable-asm --disable-x86asm")
+elseif(VCPKG_TARGET_ARCHITECTURE STREQUAL "x86" OR VCPKG_TARGET_ARCHITECTURE STREQUAL "x64")
+    # MinGW builds have been observed to fail in FFmpeg's x86 asm on GitHub Actions
+    # (e.g. gas "operand type mismatch for `shr`"). Prefer C fallbacks for CI stability.
+    if(VCPKG_TARGET_IS_MINGW)
+        set(OPTIONS "${OPTIONS} --disable-asm --disable-x86asm")
+    else()
+        set(OPTIONS "${OPTIONS} --enable-asm --enable-x86asm")
+    endif()
 endif()
 
 if(VCPKG_TARGET_IS_WINDOWS)

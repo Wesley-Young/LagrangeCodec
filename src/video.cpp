@@ -9,6 +9,7 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
+#include "util.h"
 #include "video.h"
 
 int save_frame_as_png(AVFrame* frame, int width, int height, uint8_t*& out, int& out_len) {
